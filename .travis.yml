@@ -1,0 +1,24 @@
+dist: xenial
+language: python
+python: 3.7
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get -yq install apt-transport-https
+install:
+  - wget -qO- https://api.github.com/repos/gohugoio/hugo/releases/latest | sed -r -n '/browser_download_url/{/Linux-64bit.deb/{s@[^:]*:[[:space:]]*"([^"]*)".*@\1@g;p;q}}' | xargs wget
+  - sudo dpkg -i hugo*.deb
+  - rm -rf public 2> /dev/null
+before_script:
+  - echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+  - git config --global user.email ${GITHUB_EMAIL}
+  - git config --global user.name ${GITHUB_USERNAME}
+script:
+  - hugo -d ./dist/
+after_success:
+  - MESSAGE=$(git log --format=%B -n 1 $TRAVIS_COMMIT)
+  - cd dist
+  - git init
+  - git remote add origin https://${GITHUB_TOKEN}@github.com/mayice/mayice.github.io.git
+  - git add .
+  - git commit -m "${MESSAGE}"
+  - git push origin master -f
